@@ -107,6 +107,7 @@ router.post('/queryFirst', function (req, res, next) {
           data: result
         })
       }
+      connection.release();
     });
   });
 });
