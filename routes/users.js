@@ -68,7 +68,6 @@ router.post('/regUser', function (req, res, next) {
   var param = req.body;
   pool.getConnection(function (err, connection) {
     connection.query(userSQL.getUserByAccount, [param.phone], function (err, result) {
-      console.log('============================2');
       if (result.length > 0) {
         res.json({
           success: false,
