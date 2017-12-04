@@ -79,6 +79,7 @@ router.post('/regUser', function (req, res, next) {
       } else {
         connection.query(userSQL.regUser, [param.phone, param.password, param.idcard, param.uppersion,param.status], function (err, result) {
           console.log('============================3');
+          console.log(result);
           if (result.insertId) {
             res.json({
               success: true,
@@ -92,7 +93,6 @@ router.post('/regUser', function (req, res, next) {
     });
   });
 });
-
 
 
 
