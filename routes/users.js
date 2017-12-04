@@ -67,7 +67,6 @@ router.post('/regUser', function (req, res, next) {
   // 从连接池获取连接 
   var param = req.body;
   pool.getConnection(function (err, connection) {
-    console.log('============================1');
     connection.query(userSQL.getUserByAccount, [param.phone], function (err, result) {
       console.log('============================2');
       if (result.length > 0) {
@@ -78,7 +77,6 @@ router.post('/regUser', function (req, res, next) {
         connection.release();
       } else {
         connection.query(userSQL.regUser, [param.phone, param.password, param.idcard, param.uppersion,param.status], function (err, result) {
-          console.log('============================3');
           console.log(result);
           if (result.insertId) {
             res.json({
@@ -95,7 +93,24 @@ router.post('/regUser', function (req, res, next) {
 });
 
 
-
+/**
+ * 查询 第一级
+ */
+//用户登陆
+router.post('/queryFirst', function (req, res, next) {
+  // 从连接池获取连接 
+  var param = req.body;
+  pool.getConnection(function (err, connection) {
+    connection.query(userSQL.queryFirst, [param.uppersion], function (err, result) {
+      if (result.length > 0) {
+        res.json({
+          success: true,
+          data: result
+        })
+      }
+    });
+  });
+});
 
 
 
