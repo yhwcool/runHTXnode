@@ -64,7 +64,7 @@ router.post('/regUser', function (req, res, next) {
     var currentstatus = params.currentstatus;//当前权限 
     var currentaccountid = params.currentaccountid;//当前权限 
     var obj = {
-        6: 1000,
+        6: 0,
         5: 350,
         4: 300,
         3: 150
@@ -94,35 +94,64 @@ router.post('/regUser', function (req, res, next) {
                             console.log('money:' + (parseInt(currentmoney) + obj[currentstatus]));
                             return models.User.forge({
                                 id: currentaccountid
-                            }).save(
-                                {
-                                    money: (parseInt(currentmoney) + obj[currentstatus]),
-                                }).then(function (user) { //管理员获得相应的钱
-                                    return models.User.forge({
-                                        account: params.uppersion
-                                    }).fetch().then(function (uppersion) { //查询上级，并且增加人数
-                                        if (uppersion) {
-                                            var money = uppersion.attributes.money;
-                                            var firstpersion = uppersion.attributes.firstpersion;
-                                            console.log('money 111: ' + money);
-                                            uppersion.save({
-                                                money: money + objfirst[1],
-                                                firstpersion: firstpersion + 1
-                                            }).then(function (uppersion) {
-                                                res.json({
-                                                    success: true,
-                                                    data: user,
-                                                    msg: '上级更新成功'
-                                                })
-                                            })
-                                        }
-                                        res.json({
-                                            success: true,
-                                            data: user,
-                                            msg: '添加成功'
+                            }).save({
+                                money: (parseInt(currentmoney) + obj[currentstatus]),
+                            }).then(function (user) { //管理员获得相应的钱
+                                return models.User.forge({
+                                    account: params.uppersion
+                                }).fetch().then(function (uppersionone) { //查询上级，并且增加人数
+                                    console.log('666666666');
+                                    console.log(uppersionone);
+                                    var obj = {
+                                        persionone: params.uppersion,
+                                        persiontwo: '',
+                                        persionthr: ''
+                                    }
+                                    if (uppersionone) {
+                                        obj.persiontwo = uppersionone.attributes.uppersion;
+                                        console.log('persionone:' + obj.persiontwo);
+                                        models.User.forge({
+                                            account: obj.persiontwo
+                                        }).fetch().then(function (persionthr) {
+                                            if (persionthr) {
+                                                obj.persionthr = persionthr.attributes.uppersion;
+                                                console.log('persiontwo:' + obj.persionthr)
+                                            }
                                         })
+                                        console.log(obj);
+                                        // models.Persion.forge().save({
+                                        //     account : params.account,
+                                        //     status : 1,
+                                        //     persionone : uppersion.attributes.account
+                                        // }).then(function(result){
+                                        //     console.log('result==================');
+                                        //     console.log(result);
+                                        // })
+                                        // var money = uppersion.attributes.money;
+                                        // var firstpersion = uppersion.attributes.firstpersion;
+                                        // console.log('money 111: ' + money);
+                                        // uppersion.save({
+                                        //     money: money + objfirst[1]
+                                        // }).then(function (uppersion) {
+                                        //     res.json({
+                                        //         success: true,
+                                        //         data: user,
+                                        //         msg: '上级更新成功'
+                                        //     })
+                                        // })
+                                    }else{
+                                        res.json({
+                                        success: false,
+                                        msg: '上级用户不存在'
                                     })
+                                    }
+                                    // res.json({
+                                    //     success: true,
+                                    //     data: user,
+                                    //     msg: '添加成功'
+                                    // })
                                 })
+                            })
                         }
                     }).catch(function (err) {
                         console.log(err);
@@ -140,6 +169,8 @@ router.post('/regUser', function (req, res, next) {
         //handle error
     })
 });
+
+
 
 
 //用户锁定用户
