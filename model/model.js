@@ -5,7 +5,7 @@ var User = bookshelf.Model.extend({
 });
 
 var Update = bookshelf.Model.extend({
-    tableName: "user",
+    tableName: "version",
 });
 
 

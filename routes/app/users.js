@@ -32,6 +32,7 @@ router.post('/loginUser', function (req, res, next) {
     models.User.forge({
         account: req.body.account
     }).fetch().then(function (user) {
+        console.log(user)
         if (user) {
             if (user.attributes.password === req.body.password) {
                 res.json({
@@ -194,7 +195,7 @@ router.post('/queryPersion', function (req, res, next) {
                                 secpersion.push(model.models[j].attributes);
                             }
                             if(secpersion.length >=25){ //判断时候完成任务
-                                    
+                                     
                             }
                             res.json({
                                 success: true,
