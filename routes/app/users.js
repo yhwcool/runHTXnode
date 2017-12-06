@@ -1,3 +1,4 @@
+
 var express = require('express');
 var bookshelf = require("../../db/DBconfig");
 var models = require('../../model/model');
@@ -6,7 +7,6 @@ var router = express.Router();
 
 // 查询用户
 router.post('/queryAll', function (req, res, next) {
-    console.log('666');
     var params = req.body;
     models.User.forge().fetchAll().then(function (user) {
         if (params.status != 6) {
@@ -32,13 +32,28 @@ router.post('/loginUser', function (req, res, next) {
     models.User.forge({
         account: req.body.account
     }).fetch().then(function (user) {
-        console.log(user)
         if (user) {
             if (user.attributes.password === req.body.password) {
-                res.json({
-                    success: true,
-                    data: user
+                var account = user.attributes.account;
+                models.Persion.query('where', 'persionone', '=', account).fetchAll().then(function (model1) {
+                    return models.Persion.query('where', 'persiontwo', '=', account).fetchAll().then(function (model2) {
+                        return models.Persion.query('where', 'persionthr', '=', account).fetchAll().then(function (model3) {
+                            console.log(model1.models.length);
+                            console.log(model2.models.length);
+                            console.log(model3.models.length);
+                            res.json({
+                                success: true,
+                                data: user,
+                                maininfo: {
+                                    "persionone": model1.models.length,
+                                    "persiontwo": model2.models.length,
+                                    "persionthr": model3.models.length
+                                }
+                            })
+                        })
+                    })
                 })
+
             } else {
                 res.json({
                     success: false,
@@ -81,7 +96,6 @@ router.post('/regUser', function (req, res, next) {
     delete params["currentmoney"];
     delete params["currentstatus"];
     delete params["currentaccountid"];
-    console.log(params);
     bookshelf.transaction(function (t) {
         return models.User.forge({
             account: params.account
@@ -95,8 +109,6 @@ router.post('/regUser', function (req, res, next) {
                 models.User.forge().save( //保存
                     params).then(function (reslut) { //成功之后 更新 更新管理员的账户
                         if (reslut) {
-                            console.log('currentaccount : ' + currentaccount);
-                            console.log('money:' + (parseInt(currentmoney) + obj[currentstatus]));
                             return models.User.forge({
                                 id: currentaccountid
                             }).save({
@@ -105,52 +117,61 @@ router.post('/regUser', function (req, res, next) {
                                 return models.User.forge({
                                     account: params.uppersion
                                 }).fetch().then(function (uppersionone) { //查询上级，并且增加人数
-                                    console.log('666666666');
-
                                     if (uppersionone) {
-
-                                        console.log(uppersionone);
                                         var obj = {
                                             persionone: params.uppersion,
                                             persiontwo: '',
                                             persionthr: ''
                                         }
                                         obj.persiontwo = uppersionone.attributes.uppersion;
-                                        console.log('persionone:' + obj.persiontwo);
                                         models.User.forge({
                                             account: obj.persiontwo
                                         }).fetch().then(function (persionthr) {
                                             if (persionthr) {
                                                 obj.persionthr = persionthr.attributes.uppersion;
-                                                console.log('persiontwo:' + obj.persionthr)
                                             }
                                             obj.account = params.account;
                                             obj.addtime = addtime;
-                                            console.log(obj);
                                             models.Persion.forge().save(obj).then(function (result) {
-                                                console.log('=========result========');
-                                                console.log(result);
                                                 if (result) {
-                                                    res.json({
-                                                        success: true,
-                                                        data: user,
-                                                        msg: '添加成功'
-                                                    })
+                                                    uppersionone.attributes.status < 3 && models.User.forge({ //更新 一级 的钱
+                                                        id: uppersionone.attributes.id
+                                                    }).save({
+                                                        money: parseInt(uppersionone.attributes.money) + 600
+                                                    }).then(function (userinfo) {
+                                                        if (userinfo) {
+                                                            res.json({
+                                                                success: true,
+                                                                data: user,
+                                                                msg: '添加成功'
+                                                            })
+                                                            console.log('修改成功');
+                                                        }
+                                                    }).catch(function (err) {
+                                                        console.log(err);
+                                                    });
                                                 }
-
                                             })
                                         })
-                                    } else {
+                                    } else if (params.uppersion === '润濠') {
                                         res.json({
-                                            success: false,
-                                            msg: '上级用户不存在'
+                                            success: true,
+                                            data: user,
+                                            msg: '添加成功'
                                         })
+                                    } else {
+                                        models.User.forge().where('id', '=', reslut.attributes.id).destroy().then(function () {
+                                            res.json({
+                                                success: false,
+                                                msg: '上级用户不存在'
+                                            })
+                                        })
+
                                     }
                                 })
                             })
                         }
                     }).catch(function (err) {
-                        console.log(err);
                         res.json({
                             success: false,
                             msg: '服务器错误'
@@ -159,10 +180,9 @@ router.post('/regUser', function (req, res, next) {
             }
         });
     }).then((users) => {
-        console.log('userssssssss')
-        // doSomething
+        console.log('添加成功!');
     }).catch((error) => {
-        //handle error
+        console.log('errrrrrrrrrrre');
     })
 });
 
@@ -175,13 +195,11 @@ router.post('/queryPersion', function (req, res, next) {
     var status = params.persionstatus;
     var account = params.account;
     var obj = {
-        "1" : 'persionone',
-        "2" : 'persiontwo',
-        "3" : 'persionthr'
+        "1": 'persionone',
+        "2": 'persiontwo',
+        "3": 'persionthr'
     }
     models.Persion.query('where', obj[params.persionstatus], '=', account).fetchAll().then(function (model) {
-        console.log('==========query persion ==========');
-        console.log(model.models.length);
         if (model.models) {
             res.json({
                 success: true,
@@ -189,64 +207,6 @@ router.post('/queryPersion', function (req, res, next) {
             })
         }
     })
-
-    // models.User.forge().fetchAll().then(function (user) {
-    // console.log("length:" + user.models.length);
-    // if (status == 0) { //查询一级代理
-    //     user.query('where', 'uppersion', '=', account).fetch().then(function (model) {
-    //         console.log("length:" + model.models.length);
-    //         if (model) {
-    //             firstPersion = model.models; //一级代理
-    //             res.json({
-    //                 success: true,
-    //                 data: model.models
-    //             })
-    //         }
-    //     })
-    // } else if (status == 1) { //查询二级代理
-    //     user.query('where', 'uppersion', '=', account).fetch().then(function (model) { //查询一级
-    //         if (model) {
-    //             for (var i = 0; i < model.models.length; i++) {
-    //                 var account = model.models[i].attributes.account;
-    //                 console.log('account : ' + account);
-    //                 model.query('where', 'uppersion', '=', account).fetch().then(function (model) {
-    //                     for (var j = 0; j < model.models.length; j++) {
-    //                         secpersion.push(model.models[j].attributes);
-    //                     }
-    //                     if (secpersion.length >= 25) { //判断时候完成任务
-
-    //                     }
-    //                     res.json({
-    //                         success: true,
-    //                         data: secpersion
-    //                     })
-    //                 })
-    //             }
-    //         }
-    //     })
-    // } else if (status == 2) { //三级代理
-    //     user.query('where', 'uppersion', '=', account).fetch().then(function (model) { //查询一级
-    //         if (model) {
-    //             for (var i = 0; i < model.models.length; i++) {
-    //                 var account = model.models[i].attributes.account;
-    //                 console.log('account : ' + account);
-    //                 model.query('where', 'uppersion', '=', account).fetch().then(function (model) {
-    //                     for (var j = 0; j < model.models.length; j++) {
-    //                         secpersion.push(model.models[j].attributes);
-    //                     }
-    //                     if (secpersion.length >= 25) { //判断时候完成任务
-
-    //                     }
-    //                     res.json({
-    //                         success: true,
-    //                         data: secpersion
-    //                     })
-    //                 })
-    //             }
-    //         }
-    //     })
-    // }
-    // });
 });
 
 
@@ -255,8 +215,6 @@ router.post('/queryPersion', function (req, res, next) {
 
 router.get('/', function (req, res, next) {
     models.User.forge().fetchAll().then(function (user) {
-        console.log('====================')
-        console.log(user.models);
         res.send('success');
     });
 });
